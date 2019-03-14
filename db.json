@@ -1,14 +1,28 @@
 {
-  "posts": [
-    { "id": 1, "title": "Post 1" },
-    { "id": 2, "title": "Post 2" },
-    { "id": 3, "title": "Post 3" }
-  ],
-  "comments": [
-    { "id": 1, "body": "some comment", "postId": 1 },
-    { "id": 2, "body": "some comment", "postId": 1 }
-  ],
-  "profile": {
-    "name": "typicode"
-  }
+	"ResponseObject": {
+		"List": [{
+				"RoleInCase": "المدعي",
+				"CaseCode": 8935,
+				"CourtName": "المحكمة العامة بالرياض",
+				"CaseStatus": "قيد النظر",
+				"CaseDate": "2007-03-14T00:00:00",
+				"CaseDateHijri": "24 صفر 1428 12:00 ص",
+				"CaseYear": 1428
+			},
+			{
+				"RoleInCase": "المدعي",
+				"CaseCode": 38113147,
+				"CourtName": "المحكمة العامة بالرياض",
+				"CaseStatus": "شطبت للمرة الأولى",
+				"CaseDate": "2016-11-01T11:28:00",
+				"CaseDateHijri": "01 صفر 1438 11:28 ص",
+				"CaseYear": 1438
+			}
+		],
+		"TotalCount": 6,
+		"TotalPages": 1
+	},
+	"ResponseResult": true,
+	"ResponseMessage": null,
+	"StatusCode": 0
 }
