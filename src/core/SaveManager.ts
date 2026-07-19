@@ -160,8 +160,15 @@ function sanitize(data: SaveData): SaveData {
 }
 
 function getDefaultStorage(): StorageLike {
-  if (typeof localStorage !== 'undefined') return localStorage;
-  // non-browser fallback (tests / SSR)
+  // sandboxed iframes can throw on mere localStorage access — probe defensively
+  try {
+    if (typeof localStorage !== 'undefined' && localStorage) {
+      localStorage.getItem('__probe__');
+      return localStorage;
+    }
+  } catch {
+    // fall through to in-memory storage
+  }
   const memory = new Map<string, string>();
   return {
     getItem: (k) => memory.get(k) ?? null,
