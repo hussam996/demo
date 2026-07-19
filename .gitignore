@@ -58,3 +58,5 @@ typings/
 .env
 
 dist-single/
+test-results/
+scratch-*.mjs
