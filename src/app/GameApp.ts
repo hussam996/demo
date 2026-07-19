@@ -209,13 +209,23 @@ export class GameApp {
     this.currentLevelId = levelId;
     this.disposeGameplay();
 
-    this.session = new LevelSession(level);
-    this.gameplay = new GameplayScene(
-      this.engine,
-      this.session,
-      this.audio,
-      this.save.data.settings.quality
-    );
+    try {
+      this.session = new LevelSession(level);
+      this.gameplay = new GameplayScene(
+        this.engine,
+        this.session,
+        this.audio,
+        this.save.data.settings.quality
+      );
+    } catch (err) {
+      // don't fail silently: report and return to the level map
+      console.error('فشل إنشاء المشهد:', err);
+      this.disposeGameplay();
+      this.showLevelSelect();
+      this.hud.show();
+      this.hud.toast(`تعذّر بدء المرحلة: ${String((err as Error)?.message ?? err)}`, 'error');
+      return;
+    }
     this.wireSessionUi(this.session);
 
     this.hud.setLevel(level.id);
