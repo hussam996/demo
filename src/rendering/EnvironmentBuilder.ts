@@ -41,7 +41,7 @@ export function buildEnvironment(scene: Scene): EnvironmentHandles {
   sun.intensity = 0.85;
   sun.diffuse = new Color3(1, 0.95, 0.85);
 
-  let shadowGenerator: ShadowGenerator | undefined = new ShadowGenerator(1024, sun);
+  const shadowGenerator: ShadowGenerator | undefined = new ShadowGenerator(1024, sun);
   shadowGenerator.useBlurExponentialShadowMap = true;
   shadowGenerator.blurKernel = 16;
   shadowGenerator.darkness = 0.55;
@@ -207,8 +207,11 @@ export function buildEnvironment(scene: Scene): EnvironmentHandles {
   }
 
   let quality: QualityLevel = 'medium';
+  let lastElapsed = 0;
 
   function update(elapsed: number): void {
+    const dt = Math.min(0.1, Math.max(0, elapsed - lastElapsed));
+    lastElapsed = elapsed;
     // waves roll softly toward the shore
     for (let i = 0; i < waveBands.length; i++) {
       const phase = (elapsed * 0.25 + i / waveBands.length) % 1;
@@ -219,7 +222,7 @@ export function buildEnvironment(scene: Scene): EnvironmentHandles {
     sea.position.y = 0.05 + Math.sin(elapsed * 0.8) * 0.03;
 
     for (let i = 0; i < clouds.length; i++) {
-      clouds[i].position.x += 0.15 * 0.016;
+      clouds[i].position.x += 0.15 * dt;
       if (clouds[i].position.x > 40) clouds[i].position.x = -40;
     }
 
@@ -235,14 +238,10 @@ export function buildEnvironment(scene: Scene): EnvironmentHandles {
     const gullsVisible = quality !== 'low';
     for (const gull of gulls) gull.setEnabled(gullsVisible);
     for (const cloud of clouds) cloud.setEnabled(quality !== 'low');
+    // toggle instead of disposing so raising quality later restores shadows
+    sun.shadowEnabled = quality !== 'low';
     if (shadowGenerator) {
-      if (quality === 'low') {
-        shadowGenerator.getShadowMap()?.dispose();
-        shadowGenerator.dispose();
-        shadowGenerator = undefined;
-      } else {
-        shadowGenerator.blurKernel = quality === 'high' ? 32 : 16;
-      }
+      shadowGenerator.blurKernel = quality === 'high' ? 32 : 16;
     }
   }
 

@@ -128,6 +128,22 @@ describe('LevelSession state machine', () => {
     session.dispose();
   });
 
+  it('presents the order after resume when the customer arrived during pause', () => {
+    const session = new LevelSession(getLevelConfig(1)!, new Rng(5));
+    session.start();
+    let spawned: CustomerState | undefined;
+    session.events.on('customer-spawned', (c) => (spawned = spawned ?? c));
+    for (let i = 0; i < 20 && !spawned; i++) session.tick(0.5);
+    expect(spawned).toBeDefined();
+    session.pause();
+    session.notifyCustomerArrived(spawned!.id);
+    // arrival while paused must not present the order yet
+    expect(session.state).toBe(GameplayState.LevelPaused);
+    session.resume();
+    expect(session.state).toBe(GameplayState.PreparingOrder);
+    session.dispose();
+  });
+
   it('finishes the level when the clock expires and reports goals', () => {
     const session = new LevelSession(getLevelConfig(1)!, new Rng(2));
     session.start();

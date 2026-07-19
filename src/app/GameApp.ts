@@ -14,6 +14,7 @@ import { LevelSelect } from '../ui/LevelSelect';
 import { ERROR_LABELS_AR } from '../gameplay/orders/OrderValidator';
 import { PREP_REJECTION_LABELS_AR } from '../gameplay/preparation/PreparationStation';
 import { GameplayState } from '../gameplay/GameplayState';
+import { onActivate } from '../ui/activate';
 
 /** picks an initial quality level from the device's capabilities */
 export function detectQuality(): QualityLevel {
@@ -208,6 +209,11 @@ export class GameApp {
     if (!level || !this.levelManager.isUnlocked(levelId, this.save.data.unlockedLevel)) return;
     this.currentLevelId = levelId;
     this.disposeGameplay();
+    // defense in depth: never leave a menu overlay above a starting level
+    this.mainMenu.hide();
+    this.levelSelect.hide();
+    this.results.hide();
+    this.pauseMenu.hide();
 
     try {
       this.session = new LevelSession(level);
@@ -218,12 +224,13 @@ export class GameApp {
         this.save.data.settings.quality
       );
     } catch (err) {
-      // don't fail silently: report and return to the level map
+      // don't fail silently: report persistently and return to the level map
       console.error('فشل إنشاء المشهد:', err);
       this.disposeGameplay();
       this.showLevelSelect();
-      this.hud.show();
-      this.hud.toast(`تعذّر بدء المرحلة: ${String((err as Error)?.message ?? err)}`, 'error');
+      this.showPersistentError(
+        `تعذّر بدء المرحلة — ${String((err as Error)?.message ?? err)}`
+      );
       return;
     }
     this.wireSessionUi(this.session);
@@ -248,7 +255,7 @@ export class GameApp {
         <button class="btn btn-primary btn-big" data-a="go">ابدأ! 🍦</button>
       </div>`;
     this.introEl.classList.remove('hidden');
-    this.introEl.querySelector('[data-a="go"]')!.addEventListener('click', () => {
+    onActivate(this.introEl.querySelector('[data-a="go"]') as HTMLElement, () => {
       this.introEl.classList.add('hidden');
       this.audio.unlock();
       this.session?.start();
@@ -288,9 +295,32 @@ export class GameApp {
     });
   }
 
+  /** dismissible banner that stays until the user closes it (unlike toasts) */
+  private showPersistentError(message: string): void {
+    document.getElementById('persistent-error')?.remove();
+    const el = document.createElement('div');
+    el.id = 'persistent-error';
+    el.style.cssText =
+      'position:fixed;bottom:10px;left:10px;right:10px;z-index:9999;background:rgba(180,40,40,.96);' +
+      'color:#fff;font-size:14px;padding:12px 16px;border-radius:12px;direction:rtl;text-align:center;' +
+      'font-family:inherit;word-break:break-word;pointer-events:auto;';
+    el.textContent = `⚠️ ${message} `;
+    const close = document.createElement('button');
+    close.textContent = '✕';
+    close.style.cssText =
+      'margin-inline-start:10px;border:none;background:rgba(255,255,255,.25);color:#fff;' +
+      'border-radius:8px;min-width:44px;min-height:44px;cursor:pointer;';
+    onActivate(close, () => el.remove());
+    el.appendChild(close);
+    document.body.appendChild(el);
+  }
+
   private pause(): void {
+    // no pause during the level intro (session still Loading) or after the level ended
     if (!this.session || this.session.isFinished) return;
+    if (this.session.state === GameplayState.Loading) return;
     this.session.pause();
+    if (this.session.state !== GameplayState.LevelPaused) return;
     this.pauseMenu.show(this.save.data.settings);
   }
 

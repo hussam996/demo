@@ -9,6 +9,7 @@ html,
 body {
   width: 100%;
   height: 100%;
+  direction: rtl;
   overflow: hidden;
   font-family: 'Segoe UI', Tahoma, 'Noto Naskh Arabic', sans-serif;
   background: #7ec8e3;
@@ -102,7 +103,7 @@ body {
 
 .hud-toast {
   position: absolute;
-  top: 70px;
+  top: calc(70px + env(safe-area-inset-top));
   left: 50%;
   transform: translateX(-50%);
   padding: 10px 22px;
@@ -165,6 +166,8 @@ body {
   gap: 4px;
   max-height: 38vh;
   overflow-y: auto;
+  /* the card itself ignores pointer events; re-enable so long orders can scroll */
+  pointer-events: auto;
 }
 
 .order-item {
@@ -231,6 +234,10 @@ body {
   z-index: 50;
   padding: calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right))
     calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
+}
+
+.pause-menu {
+  z-index: 60; /* must win over any other overlay it opens above */
 }
 
 .panel {
@@ -478,7 +485,7 @@ body {
 }
 
 .setting-row select {
-  min-height: 38px;
+  min-height: 44px;
   border-radius: 8px;
   border: 1px solid #cdd7e1;
   font-family: inherit;

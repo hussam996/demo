@@ -1,3 +1,5 @@
+import { onActivate } from './activate';
+
 export interface HudCallbacks {
   onPause(): void;
   onToggleSound(): void;
@@ -26,8 +28,8 @@ export class HUD {
     `;
     root.appendChild(this.el);
     this.toastEl = this.el.querySelector('.hud-toast')!;
-    this.el.querySelector('[data-action="pause"]')!.addEventListener('click', () => callbacks.onPause());
-    this.el.querySelector('[data-action="sound"]')!.addEventListener('click', () => callbacks.onToggleSound());
+    onActivate(this.el.querySelector('[data-action="pause"]')!, () => callbacks.onPause());
+    onActivate(this.el.querySelector('[data-action="sound"]')!, () => callbacks.onToggleSound());
   }
 
   show(): void {

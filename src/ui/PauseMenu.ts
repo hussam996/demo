@@ -1,4 +1,5 @@
 import type { GameSettings, QualityLevel } from '../core/SaveManager';
+import { onActivate } from './activate';
 
 export interface PauseCallbacks {
   onResume(): void;
@@ -37,9 +38,9 @@ export class PauseMenu {
     `;
     root.appendChild(this.el);
 
-    this.el.querySelector('[data-a="resume"]')!.addEventListener('click', () => callbacks.onResume());
-    this.el.querySelector('[data-a="restart"]')!.addEventListener('click', () => callbacks.onRestart());
-    this.el.querySelector('[data-a="quit"]')!.addEventListener('click', () => callbacks.onQuit());
+    onActivate(this.el.querySelector('[data-a="resume"]')!, () => callbacks.onResume());
+    onActivate(this.el.querySelector('[data-a="restart"]')!, () => callbacks.onRestart());
+    onActivate(this.el.querySelector('[data-a="quit"]')!, () => callbacks.onQuit());
 
     const music = this.el.querySelector('[data-s="music"]') as HTMLInputElement;
     const sfx = this.el.querySelector('[data-s="sfx"]') as HTMLInputElement;

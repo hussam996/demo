@@ -22,9 +22,15 @@ export async function createEngine(canvas: HTMLCanvasElement): Promise<AbstractE
   return new Engine(canvas, true, { adaptToDeviceRatio: false, stencil: true });
 }
 
+let bootedApp: GameApp | undefined;
+
 export async function bootstrap(): Promise<GameApp> {
+  // idempotent: a host re-executing the bundle must not create a second game
+  if (bootedApp) return bootedApp;
   const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
   const uiRoot = document.getElementById('ui-root') as HTMLElement;
+  uiRoot.replaceChildren();
   const engine = await createEngine(canvas);
-  return new GameApp(engine, uiRoot);
+  bootedApp = new GameApp(engine, uiRoot);
+  return bootedApp;
 }

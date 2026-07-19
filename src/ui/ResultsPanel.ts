@@ -1,5 +1,6 @@
 import type { LevelResult } from '../gameplay/levels/LevelTypes';
 import type { GoalProgress } from '../gameplay/levels/LevelManager';
+import { onActivate } from './activate';
 
 export interface ResultsCallbacks {
   onNext(): void;
@@ -27,9 +28,9 @@ export class ResultsPanel {
       </div>
     `;
     root.appendChild(this.el);
-    this.el.querySelector('[data-a="next"]')!.addEventListener('click', () => callbacks.onNext());
-    this.el.querySelector('[data-a="retry"]')!.addEventListener('click', () => callbacks.onRetry());
-    this.el.querySelector('[data-a="map"]')!.addEventListener('click', () => callbacks.onMap());
+    onActivate(this.el.querySelector('[data-a="next"]')!, () => callbacks.onNext());
+    onActivate(this.el.querySelector('[data-a="retry"]')!, () => callbacks.onRetry());
+    onActivate(this.el.querySelector('[data-a="map"]')!, () => callbacks.onMap());
   }
 
   show(result: LevelResult, goals: GoalProgress[], hasNextLevel: boolean): void {

@@ -1,4 +1,7 @@
+import { onActivate } from './activate';
+
 export interface MainMenuCallbacks {
+
   onPlay(): void;
   onWipe(): void;
 }
@@ -20,8 +23,8 @@ export class MainMenu {
       </div>
     `;
     root.appendChild(this.el);
-    this.el.querySelector('[data-a="play"]')!.addEventListener('click', () => callbacks.onPlay());
-    this.el.querySelector('[data-a="wipe"]')!.addEventListener('click', () => {
+    onActivate(this.el.querySelector('[data-a="play"]')!, () => callbacks.onPlay());
+    onActivate(this.el.querySelector('[data-a="wipe"]')!, () => {
       if (confirm('هل أنت متأكد من مسح كل التقدم؟')) callbacks.onWipe();
     });
   }

@@ -3,9 +3,11 @@ const COMBO_THRESHOLDS = [0, 2, 4, 6, 8]; // consecutive successes needed for x1
 export class ComboManager {
   private streakCount = 0;
   private best = 1;
+  private bestStreakCount = 0;
 
   registerSuccess(): void {
     this.streakCount++;
+    if (this.streakCount > this.bestStreakCount) this.bestStreakCount = this.streakCount;
     if (this.multiplier > this.best) this.best = this.multiplier;
   }
 
@@ -16,6 +18,7 @@ export class ComboManager {
   reset(): void {
     this.streakCount = 0;
     this.best = 1;
+    this.bestStreakCount = 0;
   }
 
   get streak(): number {
@@ -36,5 +39,10 @@ export class ComboManager {
 
   get bestMultiplier(): number {
     return this.best;
+  }
+
+  /** longest run of consecutive successes this level */
+  get bestStreak(): number {
+    return this.bestStreakCount;
   }
 }

@@ -135,7 +135,7 @@ export class GameplayScene {
 
   private wirePointer(): void {
     const observer = this.scene.onPointerObservable.add((info) => {
-      if (info.type !== PointerEventTypes.POINTERDOWN) return;
+      if (info.type !== PointerEventTypes.POINTERTAP) return;
       const pick = this.scene.pick(this.scene.pointerX, this.scene.pointerY, (m) => !!m.metadata?.pickAction && m.isPickable && m.isEnabled());
       const action = pick?.pickedMesh?.metadata?.pickAction as PickAction | undefined;
       if (!action) return;
@@ -160,11 +160,14 @@ export class GameplayScene {
       case 'topping':
         this.session.addTopping(action.id);
         break;
-      case 'bell':
+      case 'bell': {
         this.effects.ringBell(this.cart.bell);
         this.audio.bell();
-        this.session.deliver();
+        // keep the product visual alive across deliver()'s prep-changed event
+        this.deliveryInFlight = true;
+        if (!this.session.deliver()) this.deliveryInFlight = false;
         break;
+      }
       case 'bin':
         this.session.clearPreparation();
         this.audio.click();
@@ -250,12 +253,16 @@ export class GameplayScene {
         const customerPos = this.customers.positionOf(customer.id) ?? new Vector3(0, 0, 2);
         const product = this.product;
         this.product = undefined;
-        if (product) {
-          this.deliveryInFlight = true;
+        if (product && reward) {
+          // accepted: slide the ice cream over the window ledge to the customer
           void product.deliverTo(this.cart.deliveryAnchor, customerPos).then(() => {
             product.dispose();
             this.deliveryInFlight = false;
           });
+        } else {
+          // rejected (customer waits or leaves): the attempt is discarded
+          product?.dispose();
+          this.deliveryInFlight = false;
         }
         if (validation.isCorrect || (reward && reward.score > 0)) {
           this.audio.success();

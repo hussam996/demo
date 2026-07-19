@@ -1,4 +1,5 @@
 import type { LevelConfig, LevelResult } from '../gameplay/levels/LevelTypes';
+import { onActivate } from './activate';
 
 export interface LevelSelectCallbacks {
   onStart(levelId: number): void;
@@ -51,9 +52,9 @@ export class LevelSelect {
         <div class="level-grid">${cards}</div>
       </div>
     `;
-    this.el.querySelector('[data-a="back"]')!.addEventListener('click', () => this.callbacks.onBack());
+    onActivate(this.el.querySelector('[data-a="back"]')!, () => this.callbacks.onBack());
     this.el.querySelectorAll('[data-start]').forEach((btn) => {
-      btn.addEventListener('click', () => this.callbacks.onStart(Number((btn as HTMLElement).dataset.start)));
+      onActivate(btn as HTMLElement, () => this.callbacks.onStart(Number((btn as HTMLElement).dataset.start)));
     });
     this.el.classList.remove('hidden');
   }

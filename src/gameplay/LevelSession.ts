@@ -61,6 +61,8 @@ export class LevelSession {
   private stateBeforePause: GameplayState = GameplayState.WaitingForCustomer;
   private spawnTimer = 0;
   private finished = false;
+  /** customers that physically reached the window (survives pause/busy states) */
+  private arrivedAtWindow = new Set<string>();
 
   constructor(
     readonly level: LevelConfig,
@@ -111,6 +113,10 @@ export class LevelSession {
       remaining: this.clock.remainingSeconds,
       total: this.level.durationSeconds,
     });
+    if (expired) {
+      this.finishLevel();
+      return;
+    }
 
     // spawn customers while there is room in the queue
     if (this.queue.length < this.level.queueSize) {
@@ -137,18 +143,27 @@ export class LevelSession {
       }
     }
 
-    if (expired) this.finishLevel();
+    // an arrival may have been deferred (pause, busy window) — retry every tick
+    this.tryPresentOrder();
   }
 
   /** renderer callback: front customer finished walking to the window */
   notifyCustomerArrived(id: string): void {
+    if (this.finished) return;
+    this.arrivedAtWindow.add(id);
+    this.tryPresentOrder();
+  }
+
+  /** presents the front customer's order once they have arrived and the window is free */
+  private tryPresentOrder(): void {
     const front = this.queue.front;
-    if (!front || front.id !== id || front.orderPresented || this.finished) return;
+    if (!front || front.orderPresented || this.finished) return;
+    if (!this.arrivedAtWindow.has(front.id)) return;
     if (
       this.currentState !== GameplayState.WaitingForCustomer &&
       this.currentState !== GameplayState.CustomerReaction
     ) {
-      // window busy (e.g. mid-delivery); the arrival will re-fire after the queue advances
+      // window busy or paused; retried from tick()/resume()
       return;
     }
     front.orderPresented = true;
@@ -286,6 +301,7 @@ export class LevelSession {
   }
 
   private customerDeparts(customer: CustomerState, reason: 'served' | 'angry'): void {
+    this.arrivedAtWindow.delete(customer.id);
     this.queue.remove(customer.id);
     this.events.emit('customer-left', { customer, reason });
     for (const c of this.queue.all) this.events.emit('customer-advanced', c);
@@ -309,6 +325,8 @@ export class LevelSession {
     if (this.currentState !== GameplayState.LevelPaused) return;
     this.clock.resume();
     this.setState(this.stateBeforePause);
+    // a customer may have arrived while paused
+    this.tryPresentOrder();
   }
 
   abort(): void {

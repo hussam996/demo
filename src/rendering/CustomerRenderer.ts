@@ -194,10 +194,13 @@ class CustomerVisual {
     const icon = MOOD_ICONS[mood];
     if (!icon) {
       this.moodPlane.setEnabled(false);
+      this.moodTex?.dispose();
+      this.moodTex = undefined;
       return;
     }
     this.moodPlane.setEnabled(true);
     this.moodTex?.dispose();
+    this.moodTex = undefined;
     this.moodTex = new DynamicTexture(`mood-tex-${mood}`, { width: 96, height: 96 }, this.scene, true);
     this.moodTex.hasAlpha = true;
     const ctx = this.moodTex.getContext() as CanvasRenderingContext2D;
@@ -277,8 +280,12 @@ class CustomerVisual {
     }
   }
 
+  /** drop any in-progress walk without firing its completion callback */
+  cancelWalk(): void {
+    this.path = undefined;
+  }
+
   reset(): void {
-    this.path?.resolve();
     this.path = undefined;
     this.celebrating = 0;
     this.setMood('walking');
@@ -360,6 +367,7 @@ export class CustomerRenderer {
     const visual = this.active.get(customer.id);
     if (!visual) return;
     this.active.delete(customer.id);
+    visual.cancelWalk();
     visual.setMood(reason === 'served' ? 'happy' : 'angry');
     // happy customers briefly celebrate before leaving
     this.departing.push({ visual, delay: reason === 'served' ? 0.7 : 0.15, started: false });

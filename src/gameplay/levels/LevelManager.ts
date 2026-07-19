@@ -18,7 +18,7 @@ export function evaluateGoals(level: LevelConfig, score: ScoreManager): GoalProg
       case 'max-mistakes':
         return { goal, achieved: score.mistakes <= goal.value, current: score.mistakes };
       case 'combo-streak':
-        return { goal, achieved: score.combo.bestMultiplier >= comboForStreak(goal.value), current: score.combo.streak };
+        return { goal, achieved: score.combo.bestStreak >= goal.value, current: score.combo.bestStreak };
       case 'serve-vip':
         return { goal, achieved: score.vipCustomersServed >= goal.value, current: score.vipCustomersServed };
       case 'earn-coins':
@@ -27,15 +27,6 @@ export function evaluateGoals(level: LevelConfig, score: ScoreManager): GoalProg
         return { goal, achieved: score.lostCustomers <= goal.value, current: score.lostCustomers };
     }
   });
-}
-
-/** a streak of N correct orders maps onto the combo multiplier thresholds (x1..x5) */
-function comboForStreak(streak: number): number {
-  if (streak >= 8) return 5;
-  if (streak >= 6) return 4;
-  if (streak >= 4) return 3;
-  if (streak >= 2) return 2;
-  return 1;
 }
 
 export function computeStars(level: LevelConfig, score: ScoreManager, success: boolean): number {
