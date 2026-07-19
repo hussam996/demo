@@ -1,0 +1,30 @@
+{
+  "name": "ice-cream-cart-simulator",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Stylized cartoon 3D ice cream cart simulator game for web and mobile (Capacitor-ready)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "lint": "eslint src",
+    "format": "prettier --write \"src/**/*.{ts,css}\" \"*.{md,json}\""
+  },
+  "dependencies": {
+    "@babylonjs/core": "^7.54.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.24.0",
+    "@playwright/test": "^1.52.0",
+    "eslint": "^9.24.0",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.29.1",
+    "vite": "^6.3.2",
+    "vitest": "^3.1.1"
+  }
+}

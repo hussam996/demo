@@ -1,0 +1,15 @@
+{
+  "appId": "com.icecreamcart.simulator",
+  "appName": "Ice Cream Cart Simulator",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#7ec8e3"
+  },
+  "ios": {
+    "backgroundColor": "#7ec8e3",
+    "contentInset": "never"
+  }
+}
