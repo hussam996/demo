@@ -27,11 +27,15 @@ function makeParticleTexture(scene: Scene): Texture {
 }
 
 export class EffectsManager {
-  private particleTexture: Texture;
+  private particleTexture?: Texture;
   private quality: QualityLevel = 'medium';
 
   constructor(private scene: Scene) {
-    this.particleTexture = makeParticleTexture(scene);
+    try {
+      this.particleTexture = makeParticleTexture(scene);
+    } catch (err) {
+      console.warn('particle texture unavailable:', err);
+    }
   }
 
   setQuality(quality: QualityLevel): void {
@@ -39,6 +43,7 @@ export class EffectsManager {
   }
 
   private particleBudget(base: number): number {
+    if (!this.particleTexture) return 0; // effects disabled on this device
     return this.quality === 'high' ? base : this.quality === 'medium' ? base * 0.6 : base * 0.25;
   }
 
@@ -47,7 +52,7 @@ export class EffectsManager {
     const count = Math.round(this.particleBudget(40));
     if (count === 0) return;
     const ps = new ParticleSystem('celebrate', count, this.scene);
-    ps.particleTexture = this.particleTexture;
+    ps.particleTexture = this.particleTexture ?? null;
     ps.emitter = position.clone();
     ps.minEmitBox = new Vector3(-0.15, 0, -0.15);
     ps.maxEmitBox = new Vector3(0.15, 0.2, 0.15);
@@ -72,7 +77,7 @@ export class EffectsManager {
     const count = Math.round(this.particleBudget(20));
     if (count === 0) return;
     const ps = new ParticleSystem('anger', count, this.scene);
-    ps.particleTexture = this.particleTexture;
+    ps.particleTexture = this.particleTexture ?? null;
     ps.emitter = position.add(new Vector3(0, 0.3, 0));
     ps.color1 = new Color4(0.4, 0.35, 0.4, 0.8);
     ps.color2 = new Color4(0.6, 0.25, 0.25, 0.8);
@@ -94,7 +99,7 @@ export class EffectsManager {
     const count = Math.round(this.particleBudget(14));
     if (count === 0) return;
     const ps = new ParticleSystem('scoop-puff', count, this.scene);
-    ps.particleTexture = this.particleTexture;
+    ps.particleTexture = this.particleTexture ?? null;
     ps.emitter = position.clone();
     ps.color1 = color;
     ps.color2 = new Color4(1, 1, 1, 0.9);
@@ -128,7 +133,7 @@ export class EffectsManager {
   }
 
   dispose(): void {
-    this.particleTexture.dispose();
+    this.particleTexture?.dispose();
   }
 }
 

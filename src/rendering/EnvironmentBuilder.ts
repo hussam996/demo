@@ -41,10 +41,17 @@ export function buildEnvironment(scene: Scene): EnvironmentHandles {
   sun.intensity = 0.85;
   sun.diffuse = new Color3(1, 0.95, 0.85);
 
-  const shadowGenerator: ShadowGenerator | undefined = new ShadowGenerator(1024, sun);
-  shadowGenerator.useBlurExponentialShadowMap = true;
-  shadowGenerator.blurKernel = 16;
-  shadowGenerator.darkness = 0.55;
+  let shadowGenerator: ShadowGenerator | undefined;
+  try {
+    shadowGenerator = new ShadowGenerator(1024, sun);
+    shadowGenerator.useBlurExponentialShadowMap = true;
+    shadowGenerator.blurKernel = 16;
+    shadowGenerator.darkness = 0.55;
+  } catch (err) {
+    // some GPUs fail to allocate the shadow RTT — play without shadows
+    console.warn('shadows unavailable:', err);
+    shadowGenerator = undefined;
+  }
 
   // ---- sand ----
   const sand = MeshBuilder.CreateGround('sand', { width: 90, height: 40 }, scene);
@@ -239,7 +246,7 @@ export function buildEnvironment(scene: Scene): EnvironmentHandles {
     for (const gull of gulls) gull.setEnabled(gullsVisible);
     for (const cloud of clouds) cloud.setEnabled(quality !== 'low');
     // toggle instead of disposing so raising quality later restores shadows
-    sun.shadowEnabled = quality !== 'low';
+    sun.shadowEnabled = quality !== 'low' && !!shadowGenerator;
     if (shadowGenerator) {
       shadowGenerator.blurKernel = quality === 'high' ? 32 : 16;
     }

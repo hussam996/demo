@@ -215,22 +215,27 @@ export class GameApp {
     this.results.hide();
     this.pauseMenu.hide();
 
-    try {
-      this.session = new LevelSession(level);
-      this.gameplay = new GameplayScene(
-        this.engine,
-        this.session,
-        this.audio,
-        this.save.data.settings.quality
-      );
-    } catch (err) {
-      // don't fail silently: report persistently and return to the level map
-      console.error('فشل إنشاء المشهد:', err);
-      this.disposeGameplay();
+    let firstError: unknown;
+    for (const quality of [this.save.data.settings.quality, 'low'] as const) {
+      try {
+        this.session = new LevelSession(level);
+        this.gameplay = new GameplayScene(this.engine, this.session, this.audio, quality);
+        if (quality !== this.save.data.settings.quality) {
+          // the configured quality failed on this device — remember the working one
+          this.save.updateSettings({ quality });
+        }
+        firstError = undefined;
+        break;
+      } catch (err) {
+        firstError = firstError ?? err;
+        console.error(`فشل إنشاء المشهد (جودة ${quality}):`, err);
+        this.disposeGameplay();
+        if (quality === 'low') break; // both attempts failed
+      }
+    }
+    if (firstError !== undefined || !this.session || !this.gameplay) {
       this.showLevelSelect();
-      this.showPersistentError(
-        `تعذّر بدء المرحلة — ${String((err as Error)?.message ?? err)}`
-      );
+      this.showPersistentError(`تعذّر بدء المرحلة — ${this.describeError(firstError)}`);
       return;
     }
     this.wireSessionUi(this.session);
@@ -293,6 +298,21 @@ export class GameApp {
       const hasNext = !!this.levelManager.nextLevelId(result.levelId);
       this.results.show(result, goals, hasNext);
     });
+  }
+
+  /** technical diagnostics so remote bug reports are actionable */
+  private describeError(err: unknown): string {
+    const e = err as Error | undefined;
+    const engine = this.engine as { webGLVersion?: number; getGlInfo?: () => { renderer?: string; vendor?: string } };
+    let gpu = '';
+    try {
+      const info = engine.getGlInfo?.();
+      gpu = ` | GPU: ${info?.renderer ?? '?'}`;
+    } catch {
+      // ignore
+    }
+    const stackHead = (e?.stack ?? '').split('\n').slice(1, 3).join(' ').trim();
+    return `${e?.name ?? 'Error'}: ${e?.message ?? String(err)} | WebGL${engine.webGLVersion ?? '?'}${gpu}${stackHead ? ' | ' + stackHead : ''}`;
   }
 
   /** dismissible banner that stays until the user closes it (unlike toasts) */
