@@ -19,6 +19,7 @@ import { buildEnvironment, type EnvironmentHandles } from '../rendering/Environm
 import { CustomerRenderer } from '../rendering/CustomerRenderer';
 import { IceCreamVisual } from '../rendering/IceCreamRenderer';
 import { EffectsManager } from '../rendering/EffectsManager';
+import { ScenePost } from '../rendering/PostProcessing';
 import { LevelSession } from '../gameplay/LevelSession';
 import type { AudioManager } from '../core/AudioManager';
 import type { QualityLevel } from '../core/SaveManager';
@@ -55,6 +56,7 @@ export class GameplayScene {
   private environment!: EnvironmentHandles;
   private customers!: CustomerRenderer;
   private effects!: EffectsManager;
+  private post!: ScenePost;
   private product?: IceCreamVisual;
   private elapsed = 0;
   private toolBusy = false;
@@ -83,6 +85,8 @@ export class GameplayScene {
       for (const mesh of this.cart.root.getChildMeshes()) sg.addShadowCaster(mesh);
     }
 
+    this.post = new ScenePost(this.scene, this.camera, quality);
+    this.cart.setQuality(quality);
     this.setQuality(quality);
     this.wireSessionEvents();
     this.wirePointer();
@@ -92,6 +96,7 @@ export class GameplayScene {
       this.elapsed += dt;
       this.session.tick(dt);
       this.environment.update(this.elapsed);
+      this.cart.update(this.elapsed);
       this.customers.update(dt);
     });
   }
@@ -110,25 +115,26 @@ export class GameplayScene {
   updateCameraForAspect(): void {
     const aspect = this.engine.getRenderWidth() / Math.max(1, this.engine.getRenderHeight());
     if (aspect < 0.8) {
-      // portrait phone: step back and widen slightly
-      this.camera.position.set(0, 2.95, -3.85);
-      this.camera.fov = 1.38;
-      this.camera.setTarget(new Vector3(0, 1.2, 1.9));
+      // portrait phone: taller frame fits the awning without losing the counter
+      this.camera.position.set(0, 3.2, -3.3);
+      this.camera.fov = 1.42;
+      this.camera.setTarget(new Vector3(0, 1.45, 1.8));
     } else if (aspect < 1.3) {
-      // tablet-ish
-      this.camera.position.set(0, 2.7, -3.35);
-      this.camera.fov = 1.32;
-      this.camera.setTarget(new Vector3(0, 1.05, 1.9));
+      this.camera.position.set(0, 3.1, -3.25);
+      this.camera.fov = 1.34;
+      this.camera.setTarget(new Vector3(0, 1.35, 1.75));
     } else {
-      this.camera.position.set(0, 2.55, -3.05);
+      this.camera.position.set(0, 3.0, -3.2);
       this.camera.fov = 1.28;
-      this.camera.setTarget(new Vector3(0, 0.95, 1.9));
+      this.camera.setTarget(new Vector3(0, 1.25, 1.7));
     }
   }
 
   setQuality(quality: QualityLevel): void {
     this.environment.setQuality(quality);
     this.effects.setQuality(quality);
+    this.cart?.setQuality(quality);
+    this.post?.apply(quality);
     const scaling = quality === 'low' ? 1.5 : quality === 'medium' ? 1.0 : Math.min(1, 1 / (window.devicePixelRatio || 1)) ;
     this.engine.setHardwareScalingLevel(quality === 'high' ? Math.max(0.5, scaling) : scaling);
   }
@@ -298,6 +304,7 @@ export class GameplayScene {
     this.unsubscribers = [];
     this.product?.dispose();
     this.customers.dispose();
+    this.post.dispose();
     this.effects.dispose();
     this.environment.dispose();
     this.cart.dispose();

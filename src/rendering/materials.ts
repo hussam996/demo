@@ -22,7 +22,7 @@ export function toonMat(
   mat.diffuseColor = color;
   mat.specularColor = new Color3(1, 1, 1).scale(options.gloss ?? 0.05);
   mat.specularPower = 32;
-  mat.emissiveColor = color.scale(options.emissiveBoost ?? 0.18);
+  mat.emissiveColor = color.scale(options.emissiveBoost ?? 0.1);
   if (options.alpha !== undefined) mat.alpha = options.alpha;
   cache.set(key, mat);
   return mat;

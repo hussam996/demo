@@ -12,6 +12,9 @@ export default defineConfig({
   build: {
     target: 'es2022',
     outDir: 'dist-single',
-    chunkSizeWarningLimit: 8192,
+    chunkSizeWarningLimit: 40960,
+    // inline the CC0 GLB models as data URIs — a sandboxed host cannot fetch
+    // sibling files, so the single-file build must carry them inside the HTML
+    assetsInlineLimit: 24 * 1024 * 1024,
   },
 });

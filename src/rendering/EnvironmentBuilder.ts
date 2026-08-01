@@ -2,11 +2,13 @@ import {
   Color3,
   Color4,
   DirectionalLight,
+  DynamicTexture,
   HemisphericLight,
   Mesh,
   MeshBuilder,
   Scene,
   ShadowGenerator,
+  StandardMaterial,
   TransformNode,
   Vector3,
 } from '@babylonjs/core';
@@ -29,47 +31,82 @@ export interface EnvironmentHandles {
 export function buildEnvironment(scene: Scene): EnvironmentHandles {
   const root = new TransformNode('env-root', scene);
 
-  scene.clearColor = new Color4(0.49, 0.78, 0.89, 1);
+  scene.clearColor = new Color4(0.46, 0.76, 0.99, 1);
 
-  const ambient = new HemisphericLight('ambient', new Vector3(0.2, 1, -0.3), scene);
-  ambient.intensity = 0.75;
-  ambient.diffuse = new Color3(1, 0.98, 0.92);
-  ambient.groundColor = new Color3(0.75, 0.68, 0.55);
+  // Three-point setup: warm key from front-left, cool sky fill from above,
+  // and a rim light behind the counter that separates props from the sea.
+  const ambient = new HemisphericLight('sky-fill', new Vector3(0.1, 1, -0.2), scene);
+  ambient.intensity = 0.58;
+  ambient.diffuse = new Color3(0.86, 0.93, 1);
+  ambient.groundColor = new Color3(1, 0.86, 0.66);
+  ambient.specular = new Color3(0.2, 0.2, 0.22);
 
-  const sun = new DirectionalLight('sun', new Vector3(-0.35, -0.8, 0.45), scene);
-  sun.position = new Vector3(6, 14, -8);
-  sun.intensity = 0.85;
-  sun.diffuse = new Color3(1, 0.95, 0.85);
+  const sun = new DirectionalLight('sun', new Vector3(-0.32, -0.7, 0.52), scene);
+  sun.position = new Vector3(8, 13, -10);
+  sun.intensity = 1.0;
+  sun.diffuse = new Color3(1, 0.91, 0.74);
+  sun.specular = new Color3(1, 0.96, 0.88);
+
+  const rim = new DirectionalLight('rim', new Vector3(0.25, -0.35, -1), scene);
+  rim.position = new Vector3(-5, 6, 16);
+  rim.intensity = 0.35;
+  rim.diffuse = new Color3(0.62, 0.82, 1);
+  rim.specular = new Color3(0.4, 0.6, 0.9);
 
   let shadowGenerator: ShadowGenerator | undefined;
   try {
     shadowGenerator = new ShadowGenerator(1024, sun);
-    shadowGenerator.useBlurExponentialShadowMap = true;
-    shadowGenerator.blurKernel = 16;
-    shadowGenerator.darkness = 0.55;
+    shadowGenerator.useBlurCloseExponentialShadowMap = true;
+    shadowGenerator.blurKernel = 24;
+    shadowGenerator.depthScale = 40;
+    shadowGenerator.darkness = 0.42;
   } catch (err) {
     // some GPUs fail to allocate the shadow RTT — play without shadows
     console.warn('shadows unavailable:', err);
     shadowGenerator = undefined;
   }
 
+  // ---- gradient sky dome ----
+  const skyDome = MeshBuilder.CreateSphere('sky', { diameter: 300, segments: 16, sideOrientation: Mesh.BACKSIDE }, scene);
+  skyDome.parent = root;
+  skyDome.position.y = 10;
+  skyDome.isPickable = false;
+  skyDome.infiniteDistance = true;
+  const skyMat = new StandardMaterial('sky-mat', scene);
+  const skyTex = new DynamicTexture('sky-tex', { width: 8, height: 256 }, scene, true);
+  const sctx = skyTex.getContext() as CanvasRenderingContext2D;
+  const grad = sctx.createLinearGradient(0, 0, 0, 256);
+  grad.addColorStop(0, '#2f8ff0');
+  grad.addColorStop(0.42, '#74c2fb');
+  grad.addColorStop(0.72, '#bfe6ff');
+  grad.addColorStop(1, '#ffe6c2');
+  sctx.fillStyle = grad;
+  sctx.fillRect(0, 0, 8, 256);
+  skyTex.update();
+  skyMat.diffuseTexture = skyTex;
+  skyMat.emissiveTexture = skyTex;
+  skyMat.disableLighting = true;
+  skyMat.backFaceCulling = false;
+  skyMat.specularColor = Color3.Black();
+  skyDome.material = skyMat;
+
   // ---- sand ----
   const sand = MeshBuilder.CreateGround('sand', { width: 90, height: 40 }, scene);
   sand.parent = root;
   sand.position.z = 2;
-  sand.material = toonMat(scene, '#f2dca8');
+  sand.material = toonMat(scene, '#f8dcaa');
   sand.receiveShadows = true;
 
   // ---- sea (background only, beyond the sand) ----
   const sea = MeshBuilder.CreateGround('sea', { width: 120, height: 40 }, scene);
   sea.parent = root;
   sea.position.set(0, 0.05, 34);
-  sea.material = toonMat(scene, '#3fa9d6', { gloss: 0.35, emissiveBoost: 0.25 });
+  sea.material = toonMat(scene, '#2eb5d8', { gloss: 0.35, emissiveBoost: 0.3 });
 
   const seaFar = MeshBuilder.CreateGround('sea-far', { width: 160, height: 30 }, scene);
   seaFar.parent = root;
   seaFar.position.set(0, 0.02, 60);
-  seaFar.material = toonMat(scene, '#2c86b5', { emissiveBoost: 0.3 });
+  seaFar.material = toonMat(scene, '#1f8fc0', { emissiveBoost: 0.32 });
 
   // gentle animated wave bands rolling toward the shore
   // each band gets its own material — alpha animates per band
@@ -158,9 +195,9 @@ export function buildEnvironment(scene: Scene): EnvironmentHandles {
   const walkway = new TransformNode('walkway', scene);
   walkway.parent = root;
   for (let i = 0; i < 34; i++) {
-    const plank = MeshBuilder.CreateBox(`plank-${i}`, { width: 0.95, height: 0.07, depth: 1.7 }, scene);
+    const plank = MeshBuilder.CreateBox(`plank-${i}`, { width: 0.95, height: 0.07, depth: 2.8 }, scene);
     plank.parent = walkway;
-    plank.position.set(-16.5 + i * 1.0, 0.035, 3.1);
+    plank.position.set(-16.5 + i * 1.0, 0.035, 2.8);
     plank.material = toonMat(scene, i % 2 === 0 ? '#d8a35f' : '#cd9752');
     plank.receiveShadows = true;
     plank.isPickable = false;
@@ -248,7 +285,7 @@ export function buildEnvironment(scene: Scene): EnvironmentHandles {
     // toggle instead of disposing so raising quality later restores shadows
     sun.shadowEnabled = quality !== 'low' && !!shadowGenerator;
     if (shadowGenerator) {
-      shadowGenerator.blurKernel = quality === 'high' ? 32 : 16;
+      shadowGenerator.blurKernel = quality === 'high' ? 40 : 24;
     }
   }
 
@@ -261,6 +298,9 @@ export function buildEnvironment(scene: Scene): EnvironmentHandles {
     setQuality,
     dispose() {
       shadowGenerator?.dispose();
+      skyMat.dispose();
+      skyTex.dispose();
+      rim.dispose();
       sun.dispose();
       ambient.dispose();
       root.dispose(false, true);
