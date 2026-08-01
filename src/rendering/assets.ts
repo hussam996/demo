@@ -16,6 +16,11 @@ import boxLarge from '../../assets/models/kenney-survival-kit/box-large.glb?url'
 
 import lantern from '../../assets/models/kenney-fantasy-town-kit/lantern.glb?url';
 import bannerRed from '../../assets/models/kenney-fantasy-town-kit/banner-red.glb?url';
+import stallCounter from '../../assets/models/kenney-fantasy-town-kit/stall.glb?url';
+import stallRed from '../../assets/models/kenney-fantasy-town-kit/stall-red.glb?url';
+import stallGreen from '../../assets/models/kenney-fantasy-town-kit/stall-green.glb?url';
+import stallBench from '../../assets/models/kenney-fantasy-town-kit/stall-bench.glb?url';
+import stallStool from '../../assets/models/kenney-fantasy-town-kit/stall-stool.glb?url';
 
 import iceCream from '../../assets/models/kenney-food-kit/ice-cream.glb?url';
 import sundae from '../../assets/models/kenney-food-kit/sundae.glb?url';
@@ -46,11 +51,23 @@ export const PROP_MODELS = {
   boxLarge,
   lantern,
   bannerRed,
+  stallCounter,
+  stallRed,
+  stallGreen,
+  stallBench,
+  stallStool,
   iceCream,
   sundae,
   cupcake,
   donutSprinkles,
 } as const;
+
+/**
+ * The Kenney market-stall counter piece is 0.366 model units tall, so this
+ * scale puts its work surface at y = 1.098 — the height the interaction
+ * anchors (tubs, pedestal, bell) are already calibrated to.
+ */
+export const STALL_COUNTER_SCALE = 3;
 
 /**
  * Uniform scale that brings the Kenney mini-character rigs (~0.67-0.79 model

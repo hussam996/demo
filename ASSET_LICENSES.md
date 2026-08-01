@@ -18,7 +18,7 @@
 | Mini Characters 1.0 | https://kenney.nl/assets/mini-characters | 6 شخصيات مُهيكلة (`character-female-a/b/f`, `character-male-a/b/f`) بـ32 حركة لكل شخصية |
 | Nature Kit 2.1 | https://kenney.nl/assets/nature-kit | `pot_small`, `plant_bushDetailed`, `plant_bushSmall`, `flower_redA`, `flower_yellowA` |
 | Survival Kit | https://kenney.nl/assets/survival-kit | `barrel`, `box-large` |
-| Fantasy Town Kit 2.0 | https://kenney.nl/assets/fantasy-town-kit | `lantern`, `banner-red`, `stall-stool` |
+| Fantasy Town Kit 2.0 | https://kenney.nl/assets/fantasy-town-kit | `stall` (واجهة الكاونتر)، `stall-red`, `stall-green` (أكشاك مجاورة)، `stall-bench`, `stall-stool`, `lantern`, `banner-red` |
 | Food Kit 2.0 | https://kenney.nl/assets/food-kit | `ice-cream`, `ice-cream-cup`, `sundae`, `cupcake`, `cookie`, `donut-sprinkles` |
 
 ملاحظة تقنية: خامة `colormap.png` الخاصة بكل حزمة مدمجة داخل ملفات GLB عبر

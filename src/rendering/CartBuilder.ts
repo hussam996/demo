@@ -16,6 +16,8 @@ import { TOPPINGS, TOPPING_IDS } from '../data/toppings';
 import { CONTAINERS, CONTAINER_IDS } from '../data/containers';
 import type { ContainerType, FlavorType, SauceType, ToppingType } from '../gameplay/orders/OrderTypes';
 import type { LevelConfig } from '../gameplay/levels/LevelTypes';
+import { loadModel, placeProp } from './ModelLoader';
+import { PROP_MODELS, STALL_COUNTER_SCALE } from './assets';
 import type { QualityLevel } from '../core/SaveManager';
 
 export type PickAction =
@@ -36,6 +38,8 @@ export interface CartHandles {
   scoopRestPosition: Vector3;
   pickables: Mesh[];
   applyLevel(level: LevelConfig): void;
+  /** loads the CC0 stall models and dresses the storefront with them */
+  decorate(): Promise<void>;
   setQuality(quality: QualityLevel): void;
   update(elapsedSeconds: number): void;
   dispose(): void;
@@ -192,7 +196,9 @@ export function buildCart(scene: Scene): CartHandles {
   counterBase.position.set(0, 0.5, 0.15);
   counterBase.material = toonMat(scene, C.sandstone);
 
-  // painted panel band facing the customers
+  // painted panel band facing the customers — replaced by the modelled
+  // stall facade when the CC0 models load (see decorate())
+  const proceduralFacade: Mesh[] = [];
   const panelBand = attach(MeshBuilder.CreateBox('counter-band', { width: 4.5, height: 0.36, depth: 0.06 }, scene));
   panelBand.position.set(0, 0.42, 0.92);
   panelBand.material = toonMat(scene, C.teal);
@@ -201,7 +207,9 @@ export function buildCart(scene: Scene): CartHandles {
     dot.scaling.z = 0.35;
     dot.position.set(-1.8 + i * 0.6, 0.42, 0.96);
     dot.material = toonMat(scene, C.lettering, { emissiveBoost: 0.3 });
+    proceduralFacade.push(dot);
   }
+  proceduralFacade.push(panelBand);
 
   const counterTop = attach(
     MeshBuilder.CreateBox('counter-top', { width: 4.8, height: 0.12, depth: 1.95 }, scene),
@@ -602,6 +610,52 @@ export function buildCart(scene: Scene): CartHandles {
     for (const [id, group] of toppingMeshes) group.setEnabled(level.allowedToppings.includes(id));
   }
 
+  /**
+   * Dresses the stand with Kenney CC0 market-stall models: a crafted wooden
+   * facade tiled across the counter front (its work surface lands exactly on
+   * the counter top the interaction anchors use), neighbouring stalls that
+   * turn the beach into a small market, and seating props.
+   */
+  async function decorate(): Promise<void> {
+    const [counterModel, redStall, greenStall, bench, stool] = await Promise.all([
+      loadModel(scene, PROP_MODELS.stallCounter),
+      loadModel(scene, PROP_MODELS.stallRed),
+      loadModel(scene, PROP_MODELS.stallGreen),
+      loadModel(scene, PROP_MODELS.stallBench),
+      loadModel(scene, PROP_MODELS.stallStool),
+    ]);
+    if (scene.isDisposed) return;
+
+    if (counterModel) {
+      // three grid modules tile seamlessly across the counter front
+      // the module is 1.0 deep, so this offset lands its front face on the
+      // counter's customer-facing edge; the rest tucks under the work surface
+      for (const x of [-1.95, 0, 1.95]) {
+        placeProp(counterModel, root, new Vector3(x, 0, -0.52), {
+          scale: STALL_COUNTER_SCALE,
+          name: `stall-facade-${x}`,
+        });
+      }
+      // the painted band is now hidden behind real joinery
+      for (const mesh of proceduralFacade) mesh.setEnabled(false);
+    }
+
+    // neighbouring market stalls, set back beyond the customer walkway
+    if (redStall) {
+      placeProp(redStall, root, new Vector3(-4.1, 0, 5.0), { scale: 2.8, rotationY: 0.5, name: 'neighbour-stall-l' });
+    }
+    if (greenStall) {
+      placeProp(greenStall, root, new Vector3(4.3, 0, 5.2), { scale: 2.8, rotationY: -0.55, name: 'neighbour-stall-r' });
+    }
+    if (bench) {
+      placeProp(bench, root, new Vector3(-2.6, 0, 3.9), { scale: 2.4, rotationY: 1.5, name: 'bench' });
+    }
+    if (stool) {
+      placeProp(stool, root, new Vector3(2.7, 0, 3.9), { scale: 2.4, name: 'stool-a' });
+      placeProp(stool, root, new Vector3(3.3, 0, 4.4), { scale: 2.4, name: 'stool-b' });
+    }
+  }
+
   function setQuality(quality: QualityLevel): void {
     // outlines double the draw calls — drop them on low-end devices
     setOutlinesEnabled(outlined, quality !== 'low');
@@ -625,6 +679,7 @@ export function buildCart(scene: Scene): CartHandles {
     scoopRestPosition,
     pickables,
     applyLevel,
+    decorate,
     setQuality,
     update,
     dispose() {

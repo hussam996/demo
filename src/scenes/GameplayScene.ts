@@ -74,6 +74,7 @@ export class GameplayScene {
     this.environment = buildEnvironment(this.scene);
     this.cart = buildCart(this.scene);
     this.cart.applyLevel(session.level);
+    void this.cart.decorate();
     this.effects = new EffectsManager(this.scene);
     this.customers = new CustomerRenderer(this.scene, (id) => {
       this.session.notifyCustomerArrived(id);
